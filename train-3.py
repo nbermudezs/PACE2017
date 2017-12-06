@@ -105,9 +105,18 @@ weights = model.get_weights()
 from sklearn.metrics import precision_score
 
 def precision(y_true, y_pred):
-    print('ytrue:', type(y_true), y_true.shape)
-    print('ypred:', type(y_pred), y_pred.shape)
-    return precision_score(sess.run(y_true), sess.run(y_pred))
+    # Calculates the precision
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
+    precision = true_positives / (predicted_positives + K.epsilon())
+    return precision
+
+def recall(y_true, y_pred):
+    # Calculates the recall
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
+    recall = true_positives / (possible_positives + K.epsilon())
+    return recall
 
 
 if __name__ == '__main__':
@@ -143,7 +152,7 @@ if __name__ == '__main__':
     history = LossHistory()
     model = get_Model(num_users, num_items, 10, u_context_size, s_context_size, layers, reg_layers)
 
-    model.compile(optimizer=Adam(lr=learning_rate), loss=losses, metrics=['accuracy'])
+    model.compile(optimizer=Adam(lr=learning_rate), loss=losses, metrics=['accuracy', precision, recall])
 
 
     print('Start Training')
