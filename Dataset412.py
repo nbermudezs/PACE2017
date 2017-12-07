@@ -19,6 +19,7 @@ from torch.utils.data import Dataset, DataLoader
 from UserData import UserData
 from PoiUserData import PoiUserData
 from BusinessData import BusinessData
+from attribute_data import AttributeData
 
 
 class YelpDataset(Dataset):
@@ -230,6 +231,8 @@ class YelpDataset(Dataset):
         print('number of samples', n_samples)
         u_context = []
         s_context = []
+        u_props = []
+        s_props = []
 
         user_input, item_input, ui_label = self._pace_inputs(n_samples)
 
@@ -242,6 +245,10 @@ class YelpDataset(Dataset):
         s_size = len(b_graph_map)
         print('number of unique users', u_size)
         print('number of unique spots', s_size)
+
+        if self.is_hetero:
+            u_props = self.attribute_data.user_props_as_list(user_input)
+            s_props = self.attribute_data.business_props_as_list(item_input)
 
         for idx in range(len(user_input)):
             print('creating context idx=', idx, end='\r')
@@ -270,7 +277,9 @@ class YelpDataset(Dataset):
                  'item_input': item_input,
                  'ui_label': ui_label,
                  'u_context': u_context,
-                 's_context': s_context }
+                 's_context': s_context,
+                 'u_props': u_props,
+                 's_props': s_props }
 
     def _pace_inputs(self, n_samples):
         user_inputs = []
@@ -306,7 +315,7 @@ class YelpDataset(Dataset):
 
 if __name__ == '__main__':
     # Other arguments are given in as default arguments,
-    sanity_test = YelpDataset('./')
+    sanity_test = YelpDataset('./', is_hetero=True)
     all = sanity_test.to_PACE_format()
     import pdb; pdb.set_trace()
     x = {}
