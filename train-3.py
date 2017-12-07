@@ -24,7 +24,8 @@ K.set_session(sess)
 def init_normal(shape, name=None):
     return initializers.normal(shape)
 
-def get_Model(num_users, num_items, latent_dim, user_con_len, item_con_len, layers = [20,10,5], regs=[0,0,0]):
+def get_Model(num_users, num_items, latent_dim, user_con_len, item_con_len, layers = [20,10,5], regs=[0,0,0,0,0],
+              user_props_len=40, item_props_len=40, props_latent_dim=10):
 	# Input variables
     user_input = Input(shape=(1,), dtype='int32', name = 'user_input')
     item_input = Input(shape=(1,), dtype='int32', name = 'item_input')
@@ -33,11 +34,17 @@ def get_Model(num_users, num_items, latent_dim, user_con_len, item_con_len, laye
                                   embeddings_initializer='uniform', W_regularizer = l2(regs[0]), input_length=1)
     item_embedding = Embedding(input_dim = num_items, output_dim = latent_dim, name = 'item_embedding',
                                   embeddings_initializer='uniform', W_regularizer = l2(regs[1]), input_length=1)
+    user_props_embedding = Embedding(input_dim = num_users, output_dim = props_latent_dim, name = 'user_props_embedding',
+                                     embeddings_initializer='uniform', W_regularizer = l2(regs[3]), input_length=1)
+    item_props_embedding = Embedding(input_dim = num_items, output_dim = props_latent_dim, name = 'item_props_embedding',
+                                     embeddings_initializer='uniform', W_regularizer = l2(regs[4]), input_length=1)
 
     user_latent = Flatten()(user_embedding(user_input))
     item_latent = Flatten()(item_embedding(item_input))
+    u_props_latent = Flatten()(user_props_embedding(user_input))
+    i_props_latent = Flatten()(item_props_embedding(item_input))
 
-    vector = merge([user_latent, item_latent], mode = 'concat')
+    vector = merge([user_latent, item_latent, u_props_latent, i_props_latent], mode = 'concat')
 
     for i in range(len(layers)):
         hidden = Dense(layers[i], activation='relu', init='lecun_uniform', name='ui_hidden_' + str(i))
@@ -47,8 +54,10 @@ def get_Model(num_users, num_items, latent_dim, user_con_len, item_con_len, laye
 
     user_context = Dense(user_con_len, activation='sigmoid', init='lecun_uniform', name='user_context')(user_latent)
     item_context = Dense(item_con_len, activation='sigmoid', init='lecun_uniform', name='item_context')(item_latent)
+    u_props = Dense(user_props_len, activation='sigmoid', init='lecun_uniform', name='u_props_context')(u_props_latent)
+    i_props = Dense(item_props_len, activation='sigmoid', init='lecun_uniform', name='i_props_context')(i_props_latent)
 
-    model = Model(input=[user_input, item_input], output=[prediction, user_context, item_context])
+    model = Model(input=[user_input, item_input], output=[prediction, user_context, item_context, u_props, i_props])
     return model
 
 
@@ -62,6 +71,8 @@ def get_train_instances(train_data):
         ui_label = train_data['ui_label']
         u_context = train_data['u_context']
         s_context = train_data['s_context']
+        u_props = train_data['u_props']
+        s_props = train_data['s_props']
         for i in range(len(u_context)):
             u = []
             it = []
@@ -70,7 +81,12 @@ def get_train_instances(train_data):
             it.append(item_input[i])
             p.append(ui_label[i])
             x = {'user_input':np.array(u), 'item_input':np.array(it)}
-            y = {'prediction':np.array(p), 'user_context':np.array(u_context[i]).reshape((1, u_context_size)), 'item_context':np.array(s_context[i]).reshape((1, s_context_size))}
+            y = {
+                'prediction':np.array(p),
+                'user_context':np.array(u_context[i]).reshape((1, u_context_size)),
+                'item_context':np.array(s_context[i]).reshape((1, s_context_size)),
+                'u_props':np.array(u_props[i]).reshape((1, u_props_size)),
+                's_props':np.array(s_props[i]).reshape((1, s_props_size))}
             yield (x, y)
 
 
@@ -81,16 +97,20 @@ from Dataset412 import YelpDataset
 from UserData import UserData
 from PoiUserData import PoiUserData
 from BusinessData import BusinessData
-d = YelpDataset('.')
+d = YelpDataset('.', is_hetero=True)
 train_data = d.to_PACE_format()
 u_context = train_data['u_context']
 s_context = train_data['s_context']
+u_props = train_data['u_props']
+s_props = train_data['s_props']
 user_input = train_data['user_input']
 item_input = train_data['item_input']
 ui_label = train_data['ui_label']
 
 u_context_size = len(u_context[0])
 s_context_size = len(s_context[0])
+u_props_size = len(u_props[0])
+s_props_size = len(s_props[0])
 
 # In[ ]:
 
@@ -123,13 +143,17 @@ if __name__ == '__main__':
     # import pdb; pdb.set_trace()
 
     layers = eval("[16,8]")
-    reg_layers = eval("[0,0]")
+    reg_layers = eval("[0,0,0,0,0]")
     learner = "Adam"
     learning_rate = 0.0001
     epochs = 100
     batch_size = 1024
     verbose = 1
-    losses = ['binary_crossentropy','categorical_crossentropy', 'categorical_crossentropy']
+    losses = ['binary_crossentropy',
+              'categorical_crossentropy',
+              'categorical_crossentropy',
+              'categorical_crossentropy',
+              'categorical_crossentropy']
 
     num_users, num_items = len(user_input), len(item_input)
     num_user_context = len(u_context[0])
