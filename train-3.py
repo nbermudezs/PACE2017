@@ -85,8 +85,8 @@ def get_train_instances(train_data):
                 'prediction':np.array(p),
                 'user_context':np.array(u_context[i]).reshape((1, u_context_size)),
                 'item_context':np.array(s_context[i]).reshape((1, s_context_size)),
-                'u_props':np.array(u_props[i]).reshape((1, u_props_size)),
-                's_props':np.array(s_props[i]).reshape((1, s_props_size))}
+                'u_props_context':np.array(u_props[i]).reshape((1, u_props_size)),
+                'i_props_context':np.array(s_props[i]).reshape((1, s_props_size))}
             yield (x, y)
 
 
@@ -97,6 +97,7 @@ from Dataset412 import YelpDataset
 from UserData import UserData
 from PoiUserData import PoiUserData
 from BusinessData import BusinessData
+from attribute_data import AttributeData
 d = YelpDataset('.', is_hetero=True)
 train_data = d.to_PACE_format()
 u_context = train_data['u_context']

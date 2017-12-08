@@ -87,14 +87,18 @@ class AttributeData:
     def user_props_as_list(self, idxs, filename='dataset/user.json'):
         self.user_attribute_list = ['review_count', 'average_stars']
         uids = [self.pud.idx2user_id[idx] for idx in idxs]
-        result = defaultdict(lambda: [])
+        unique_count = len(np.unique(uids))
+        result = defaultdict(lambda: [0,0])
         with open(filename, 'r') as f:
-            for line in f:
+            for i, line in enumerate(f):
+                print('line #', i, 'found=', len(result), '/', unique_count, end='\r')
                 obj = json.loads(line)
                 if obj['user_id'] in uids:
                     idx = self.pud.user_id2idx[obj['user_id']]
                     for attr in self.user_attribute_list:
                         result[idx].append(obj[attr])
+                if len(result) == unique_count:
+                    break
         rc_values = [x[0] for x in result.values()]
         rc_mean, rc_std = np.mean(rc_values), np.std(rc_values)
 
@@ -110,14 +114,18 @@ class AttributeData:
     def business_props_as_list(self, idxs, filename='dataset/business.json'):
         self.business_attribute_list = ['stars', 'review_count']
         bids = [self.pud.idx2business_id[idx] for idx in idxs]
-        result = defaultdict(lambda: [])
+        unique_count = len(np.unique(bids))
+        result = defaultdict(lambda: [0,0])
         with open(filename, 'r') as f:
-            for line in f:
+            for i, line in enumerate(f):
+                print('line #', i, 'found=', len(result), '/', unique_count, end='\r')
                 obj = json.loads(line)
                 if obj['business_id'] in bids:
                     idx = self.pud.business_id2idx[obj['business_id']]
                     for attr in self.business_attribute_list:
                         result[idx].append(obj[attr])
+                if len(result) == unique_count:
+                    break
         s_values = [x[0] for x in result.values()]
         s_mean, s_std = np.mean(s_values), np.std(s_values)
 
