@@ -87,10 +87,17 @@ u_context = train_data['u_context']
 s_context = train_data['s_context']
 user_input = train_data['user_input']
 item_input = train_data['item_input']
+uniq_tmp = np.unique(user_input)
+user_input = [np.where(uniq_tmp == x)[0][0] for x in user_input]
+uniq_tmp = np.unique(item_input)
+item_input = [np.where(uniq_tmp == x)[0][0] for x in item_input]
 ui_label = train_data['ui_label']
 
 u_context_size = len(u_context[0])
 s_context_size = len(s_context[0])
+
+train_data['user_input'] = user_input
+train_data['item_input'] = item_input
 
 # In[ ]:
 
@@ -126,8 +133,8 @@ if __name__ == '__main__':
     reg_layers = eval("[0,0]")
     learner = "Adam"
     learning_rate = 0.0001
-    epochs = 100
-    batch_size = 1024
+    epochs = 80
+    batch_size = 512
     verbose = 1
     losses = ['binary_crossentropy','categorical_crossentropy', 'categorical_crossentropy']
 
