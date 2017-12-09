@@ -225,8 +225,8 @@ class YelpDataset(Dataset):
             business_attrs_stats.append(stats)
         return user_attrs_stats, business_attrs_stats
 
-    def to_PACE_format(self, sample_percent=0.04):
-        n_entries = self.poi_user_data.relations_count()
+    def to_PACE_format(self, sample_percent=0.003):
+        n_entries = len(self)
         n_samples = int(n_entries * sample_percent)
         print('number of samples', n_samples)
         u_context = []
