@@ -81,13 +81,26 @@ from Dataset412 import YelpDataset
 from UserData import UserData
 from PoiUserData import PoiUserData
 from BusinessData import BusinessData
-d = YelpDataset('.')
+from attribute_data import AttributeData
+d = YelpDataset('.', is_hetero=True)
 train_data = d.to_PACE_format()
 u_context = train_data['u_context']
 s_context = train_data['s_context']
 user_input = train_data['user_input']
 item_input = train_data['item_input']
+uniq_tmp = np.unique(user_input)
+user_input = [np.where(uniq_tmp == x)[0][0] for x in user_input]
+uniq_tmp = np.unique(item_input)
+item_input = [np.where(uniq_tmp == x)[0][0] for x in item_input]
 ui_label = train_data['ui_label']
+
+u_context = np.concatenate((u_context, train_data['u_props']), axis=1)
+s_context = np.concatenate((s_context, train_data['s_props']), axis=1)
+
+train_data['u_context'] = u_context
+train_data['s_context'] = s_context
+train_data['user_input'] = user_input
+train_data['item_input'] = item_input
 
 u_context_size = len(u_context[0])
 s_context_size = len(s_context[0])
@@ -95,14 +108,16 @@ s_context_size = len(s_context[0])
 # In[ ]:
 
 
-model = get_Model(num_users=100000, num_items=100000, latent_dim=10, user_con_len=u_context_size, item_con_len=s_context_size)
+model = get_Model(num_users=100000,
+                  num_items=100000,
+                  latent_dim=10,
+                  user_con_len=u_context_size,
+                  item_con_len=s_context_size)
 config = model.get_config()
 weights = model.get_weights()
 
 
 # In[ ]:
-
-from sklearn.metrics import precision_score
 
 def precision(y_true, y_pred):
     # Calculates the precision
@@ -132,8 +147,7 @@ if __name__ == '__main__':
     losses = ['binary_crossentropy','categorical_crossentropy', 'categorical_crossentropy']
 
     num_users, num_items = len(user_input), len(item_input)
-    num_user_context = len(u_context[0])
-    num_item_context = len(s_context[0])
+    import pdb; pdb.set_trace()
 
     print('Build model')
     class LossHistory(keras.callbacks.Callback):
